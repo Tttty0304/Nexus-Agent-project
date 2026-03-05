@@ -179,19 +179,7 @@ docker-compose --profile monitoring up -d
 | `SECRET_KEY` | JWT 签名密钥 | - |
 | `RATE_LIMIT_REQUESTS_PER_MINUTE` | 每分钟请求限制 | 60 |
 
-## 🌟 最新修复
-
-### Bug 修复
-1. ✅ 修复 `delete_document` 函数的严重 bug（只查询不删除）
-2. ✅ 修复 `cache.py` 中 asyncio 导入位置问题
-3. ✅ 修复 `init.sql` 和模型定义的字段名不匹配
-4. ✅ 修复 `sessions.py` 中的 session_id 类型不一致
-5. ✅ 优化错误处理和日志记录
-
-### 新增功能
-1. ✅ 创建完整的测试前端界面 (`/static/index.html`)
-2. ✅ 创建详细的 RAG 测试指南 (`RAG_TESTING_GUIDE.md`)
-3. ✅ 创建项目总结文档 (`PROJECT_SUMMARY.md`)
+)
 
 ## 📋 测试清单
 
