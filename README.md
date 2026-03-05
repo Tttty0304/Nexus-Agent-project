@@ -1,8 +1,8 @@
-# Nexus-Agent 满血版本
+# Nexus-Agent 
 
 高并发企业级 RAG 与 Agent 编排平台
 
-> **最新更新**: 2026-03-02 - 已修复所有已知 bug，新增测试界面，完善文档
+
 
 ## 快速开始
 
@@ -243,13 +243,7 @@ curl "http://localhost:8080/v1/knowledge/search?query=测试&search_type=hybrid&
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-## 📞 支持
 
-遇到问题？
-
-1. 查看 [RAG 测试指南](RAG_TESTING_GUIDE.md) 的故障排查章节
-2. 检查服务日志：`docker-compose logs -f`
-3. 访问 API 文档：`http://localhost:8080/docs`
 
 ## 📄 License
 
