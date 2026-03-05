@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus-Agent 后端测试界面</title>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { text-align: center; color: #667eea; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 14px; }
+
+        /* 布局 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        /* 面板 */
+        .panel {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #0f3460;
+        }
+        .panel h2 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        /* 表单元素 */
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 13px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f3460;
+            border: 1px solid #1a1a2e;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        textarea { min-height: 80px; resize: vertical; }
+
+        /* 按钮 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            width: 100%;
+        }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-primary:disabled {
+            background: #3a4a8a;
+            cursor: not-allowed;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: #0f3460;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        /* 状态提示 */
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+            display: none;
+        }
+        .status.success { background: #1e4d2b; color: #4ade80; display: block; }
+        .status.error { background: #4a1e1e; color: #f87171; display: block; }
+        .status.info { background: #1e3a4d; color: #60a5fa; display: block; }
+
+        /* 文件上传 */
+        .file-drop {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-drop:hover { background: #0f3460; }
+        .file-drop input { display: none; }
+
+        /* 聊天区域 */
+        .chat-container {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .message.user {
+            background: #667eea;
+            margin-left: 50px;
+        }
+        .message.assistant {
+            background: #16213e;
+            border: 1px solid #0f3460;
+        }
+        .message-header {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        /* ReAct 五状态机样式 */
+        .react-status {
+            font-size: 12px;
+            color: #888;
+            padding: 4px 10px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .react-status.thinking { color: #fbbf24; }
+        .react-status.acting { color: #60a5fa; }
+        .react-status.observing { color: #a78bfa; }
+        .react-status.finished { color: #4ade80; }
+
+        .thought-box {
+            background: #1a1a2e;
+            border-left: 3px solid #fbbf24;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #bbb;
+        }
+        .thought-box::before {
+            content: "💭 思考过程";
+            display: block;
+            color: #fbbf24;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .tool-call {
+            background: #1a1a2e;
+            border-left: 3px solid #60a5fa;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .tool-call::before {
+            content: "🔧 调用工具";
+            display: block;
+            color: #60a5fa;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .tool-result {
+            background: #1a1a2e;
+            border-left: 3px solid #a78bfa;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-size: 13px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .tool-result::before {
+            content: "📊 工具结果";
+            display: block;
+            color: #a78bfa;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        /* 文档列表 */
+        .doc-item {
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .doc-status {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .doc-status.completed { background: #1e4d2b; color: #4ade80; }
+        .doc-status.processing { background: #4a4a1e; color: #fbbf24; }
+        .doc-status.failed { background: #4a1e1e; color: #f87171; }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #0f3460;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: #0f3460;
+            border: none;
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* 代码块 */
+        pre {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        code { font-family: 'Monaco', 'Consolas', monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Nexus-Agent 测试平台</h1>
+        <p class="subtitle">极简后端测试界面 | 纯原生 JavaScript | 零前端框架</p>
+
+        <!-- 认证区域 -->
+        <div class="panel">
+            <h2>🔐 身份认证</h2>
+            <div id="authSection">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="username" placeholder="test">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="password" placeholder="test123">
+                </div>
+                <button class="btn btn-primary" onclick="login()">登录 / 注册</button>
+            </div>
+            <div id="authStatus" class="status"></div>
+            <div id="userInfo" style="display:none; margin-top:10px;">
+                <span style="color:#4ade80;">✓ 已认证</span>
+                <button class="btn-small" onclick="logout()" style="float:right;">退出</button>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- 左侧：知识库管理 -->
+            <div class="left-panel">
+                <div class="panel">
+                    <h2>📄 PDF 上传</h2>
+                    <div class="file-drop" onclick="document.getElementById('pdfInput').click()">
+                        <input type="file" id="pdfInput" accept=".pdf" onchange="handleUpload(event)">
+                        <p>📁 点击或拖拽 PDF 文件</p>
+                        <p style="font-size:12px;color:#666;margin-top:10px;">最大 50MB</p>
+                    </div>
+                    <div id="uploadStatus" class="status"></div>
+                </div>
+
+                <div class="panel">
+                    <h2>📚 文档列表</h2>
+                    <button class="btn btn-primary" onclick="loadDocuments()" style="margin-bottom:15px;">刷新</button>
+                    <div id="docList"><p style="color:#666;font-size:13px;">暂无文档</p></div>
+                </div>
+            </div>
+
+            <!-- 右侧：ReAct Agent 测试 -->
+            <div class="right-panel">
+                <div class="panel">
+                    <h2>🧠 ReAct Agent 流式测试</h2>
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('react')">ReAct 智能体</button>
+                        <button class="tab" onclick="switchTab('rag')">RAG 问答</button>
+                    </div>
+
+                    <!-- ReAct Agent 界面 -->
+                    <div id="reactTab">
+                        <div class="form-group">
+                            <label>Session ID (会话标识)</label>
+                            <input type="text" id="sessionId" value="test-session-001">
+                        </div>
+                        <div class="form-group">
+                            <label>用户输入</label>
+                            <textarea id="userInput" placeholder="例如：请总结我上传的文档内容，或者：这个项目的技术架构是什么？"></textarea>
+                        </div>
+                        <button class="btn btn-primary" id="sendBtn" onclick="sendReactStream()">
+                            <span id="btnText">发送请求</span>
+                        </button>
+
+                        <!-- 聊天显示区 -->
+                        <div class="chat-container" id="chatContainer" style="margin-top:20px;">
+                            <p style="color:#666;text-align:center;padding:40px;">对话将显示在这里...</p>
+                        </div>
+                    </div>
+
+                    <!-- RAG 问答界面 -->
+                    <div id="ragTab" style="display:none;">
+                        <div class="form-group">
+                            <label>检索查询</label>
+                            <input type="text" id="ragQuery" placeholder="输入关键词检索知识库...">
+                        </div>
+                        <button class="btn btn-primary" onclick="searchRAG()">检索</button>
+                        <div id="ragResults" style="margin-top:20px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局状态 ====================
+        const API_BASE = 'http://localhost:8080';
+        let token = localStorage.getItem('nexus_token') || '';
+        let currentSession = [];
+
+        // ==================== 认证模块 ====================
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // 先尝试注册
+                const registerRes = await fetch(`${API_BASE}/v1/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, email: `${username}@test.com` })
+                });
+
+                // 登录
+                const loginRes = await fetch(`${API_BASE}/v1/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+
+                if (loginRes.ok) {
+                    const data = await loginRes.json();
+                    token = data.access_token;
+                    localStorage.setItem('nexus_token', token);
+                    showAuth(true);
+                    showStatus('authStatus', 'success', '登录成功！');
+                } else {
+                    throw new Error('登录失败');
+                }
+            } catch (e) {
+                showStatus('authStatus', 'error', '认证失败: ' + e.message);
+            }
+        }
+
+        function logout() {
+            token = '';
+            localStorage.removeItem('nexus_token');
+            showAuth(false);
+        }
+
+        function showAuth(authed) {
+            document.getElementById('authSection').style.display = authed ? 'none' : 'block';
+            document.getElementById('userInfo').style.display = authed ? 'block' : 'none';
+        }
+
+        // ==================== 文档上传模块 ====================
+        async function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('uploadStatus');
+            status.className = 'status info';
+            status.innerHTML = '<span class="loading"></span> 正在上传...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch(`${API_BASE}/v1/knowledge/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    status.innerHTML = '✓ 上传成功，正在解析...';
+                    pollTask(data.task_id, data.document_id);
+                } else {
+                    throw new Error(data.detail || '上传失败');
+                }
+            } catch (e) {
+                showStatus('uploadStatus', 'error', '上传失败: ' + e.message);
+            }
+        }
+
+        // 轮询任务状态
+        function pollTask(taskId, docId) {
+            const status = document.getElementById('uploadStatus');
+            const poll = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/v1/knowledge/tasks/${taskId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+
+                    const statusMap = {
+                        'pending': '等待处理...',
+                        'started': '开始处理...',
+                        'processing': '正在解析 PDF...',
+                        'embedding': '正在生成向量...',
+                        'success': '✓ 解析完成！',
+                        'failure': '✗ 处理失败'
+                    };
+
+                    status.innerHTML = `<span class="loading"></span> ${statusMap[data.status] || data.status}`;
+
+                    if (data.status === 'success' || data.status === 'failure') {
+                        clearInterval(poll);
+                        if (data.status === 'success') {
+                            status.className = 'status success';
+                            loadDocuments();
+                        } else {
+                            status.className = 'status error';
+                        }
+                    }
+                } catch (e) {
+                    clearInterval(poll);
+                }
+            }, 2000);
+        }
+
+        // ==================== 文档列表模块 ====================
+        async function loadDocuments() {
+            try {
+                const res = await fetch(`${API_BASE}/v1/knowledge/documents`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                const list = document.getElementById('docList');
+                if (!data.data || data.data.length === 0) {
+                    list.innerHTML = '<p style="color:#666;font-size:13px;">暂无文档</p>';
+                    return;
+                }
+
+                list.innerHTML = data.data.map(doc => `
+                    <div class="doc-item">
+                        <div>
+                            <div style="font-size:12px;color:#888;">${doc.filename}</div>
+                            <span class="doc-status ${doc.status}">${doc.status}</span>
+                        </div>
+                        <button class="btn-small" onclick="deleteDoc(${doc.id})">删除</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('加载文档失败:', e);
+            }
+        }
+
+        async function deleteDoc(id) {
+            if (!confirm('确定删除？')) return;
+            await fetch(`${API_BASE}/v1/knowledge/documents/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            loadDocuments();
+        }
+
+        // ==================== ReAct Agent SSE 流式解析 ====================
+        async function sendReactStream() {
+            const input = document.getElementById('userInput').value.trim();
+            const sessionId = document.getElementById('sessionId').value;
+            const btn = document.getElementById('sendBtn');
+            const btnText = document.getElementById('btnText');
+            const container = document.getElementById('chatContainer');
+
+            if (!input) return alert('请输入内容');
+            if (!token) return alert('请先登录');
+
+            // 禁用按钮
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> 处理中...';
+
+            // 添加用户消息到界面
+            addMessage('user', input);
+
+            // 创建 Assistant 消息容器
+            const msgId = 'msg-' + Date.now();
+            const assistantDiv = document.createElement('div');
+            assistantDiv.className = 'message assistant';
+            assistantDiv.id = msgId;
+            assistantDiv.innerHTML = `
+                <div class="message-header">Assistant</div>
+                <div class="content" id="${msgId}-content">等待响应...</div>
+            `;
+            container.appendChild(assistantDiv);
+            container.scrollTop = container.scrollHeight;
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/agent/react`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        user_input: input,
+                        max_iterations: 5
+                    })
+                });
+
+                if (!response.ok) throw new Error('请求失败');
+
+                // ============ 核心：SSE 流式解析 ============
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullAnswer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // 解码二进制数据
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // 按行分割处理
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // 保留不完整的行
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6); // 去掉 "data: " 前缀
+
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const event = JSON.parse(data);
+                                handleReactEvent(msgId, event, fullAnswer);
+
+                                // 累积答案
+                                if (event.type === 'answer' && event.content) {
+                                    fullAnswer += event.content;
+                                }
+                            } catch (e) {
+                                console.error('解析 SSE 数据失败:', e);
+                            }
+                        }
+                    }
+                }
+
+                // 最终渲染 Markdown
+                const contentDiv = document.getElementById(`${msgId}-content`);
+                if (fullAnswer) {
+                    contentDiv.innerHTML = marked.parse(fullAnswer);
+                }
+
+            } catch (e) {
+                document.getElementById(`${msgId}-content`).innerHTML =
+                    `<span style="color:#f87171;">错误: ${e.message}</span>`;
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = '发送请求';
+            }
+        }
+
+        // 处理 ReAct 事件 - 五状态机渲染
+        function handleReactEvent(msgId, event, fullAnswer) {
+            const contentDiv = document.getElementById(`${msgId}-content`);
+
+            switch (event.type) {
+                case 'status':
+                    // 状态更新: IDLE, THINKING, ACTING, OBSERVING, FINISHED
+                    const stateClass = event.state?.toLowerCase() || '';
+                    contentDiv.innerHTML = `
+                        <span class="react-status ${stateClass}">
+                            状态: ${event.state} | 轮次: ${event.iteration || 1}
+                        </span>
+                    `;
+                    break;
+
+                case 'thought':
+                    // Agent 思考过程
+                    contentDiv.innerHTML += `
+                        <div class="thought-box">${escapeHtml(event.content || '')}</div>
+                    `;
+                    break;
+
+                case 'tool_call':
+                    // 工具调用
+                    contentDiv.innerHTML += `
+                        <div class="tool-call">
+                            <strong>${event.tool}</strong><br>
+                            <code>${escapeHtml(JSON.stringify(event.input || {}))}</code>
+                        </div>
+                    `;
+                    break;
+
+                case 'tool_result':
+                    // 工具结果
+                    const result = typeof event.result === 'string'
+                        ? event.result
+                        : JSON.stringify(event.result, null, 2);
+                    contentDiv.innerHTML += `
+                        <div class="tool-result">${escapeHtml(result.substring(0, 500))}</div>
+                    `;
+                    break;
+
+                case 'answer':
+                    // 最终答案（流式累积）
+                    contentDiv.innerHTML = marked.parse(fullAnswer + (event.content || ''));
+                    break;
+
+                case 'error':
+                    contentDiv.innerHTML += `
+                        <div style="color:#f87171;padding:10px;background:#4a1e1e;border-radius:4px;">
+                            错误: ${event.message}
+                        </div>
+                    `;
+                    break;
+            }
+
+            // 自动滚动
+            const container = document.getElementById('chatContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ==================== RAG 检索模块 ====================
+        async function searchRAG() {
+            const query = document.getElementById('ragQuery').value.trim();
+            if (!query) return;
+
+            const resultsDiv = document.getElementById('ragResults');
+            resultsDiv.innerHTML = '<span class="loading"></span> 检索中...';
+
+            try {
+                const res = await fetch(
+                    `${API_BASE}/v1/knowledge/search?query=${encodeURIComponent(query)}&search_type=hybrid&top_k=5`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                const data = await res.json();
+
+                resultsDiv.innerHTML = data.map((item, i) => `
+                    <div style="background:#16213e;padding:15px;border-radius:8px;margin-bottom:10px;">
+                        <div style="font-size:12px;color:#667eea;margin-bottom:5px;">
+                            [${i+1}] 相似度: ${(item.similarity * 100).toFixed(1)}%
+                        </div>
+                        <div style="font-size:13px;color:#ccc;">${escapeHtml(item.content.substring(0, 200))}...</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                resultsDiv.innerHTML = `<span style="color:#f87171;">检索失败: ${e.message}</span>`;
+            }
+        }
+
+        // ==================== 工具函数 ====================
+        function addMessage(role, content) {
+            const container = document.getElementById('chatContainer');
+            if (container.querySelector('p')) container.innerHTML = '';
+
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerHTML = `
+                <div class="message-header">${role === 'user' ? 'You' : 'Assistant'}</div>
+                <div>${escapeHtml(content)}</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('reactTab').style.display = tab === 'react' ? 'block' : 'none';
+            document.getElementById('ragTab').style.display = tab === 'rag' ? 'block' : 'none';
+        }
+
+        function showStatus(id, type, msg) {
+            const el = document.getElementById(id);
+            el.className = `status ${type}`;
+            el.textContent = msg;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 初始化
+        if (token) {
+            showAuth(true);
+            loadDocuments();
+        }
+    </script>
+</body>
+</html>

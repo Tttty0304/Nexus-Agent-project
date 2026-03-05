@@ -1,0 +1,205 @@
+services:
+  # FastAPI 应用服务
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - VLLM_BASE_URL=http://vllm:8001
+      - VLLM_API_KEY=${VLLM_API_KEY:-nexus-agent-secret-key}
+      - VLLM_MODEL=${VLLM_MODEL:-/models/Qwen2-7B-Instruct-AWQ}
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/nexus
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    ports:
+      - "0.0.0.0:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vllm:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app:ro
+      - ./static:/app/static:ro
+      - nexus-uploads:/tmp/nexus-uploads
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8080
+      --workers 2
+      --loop uvloop
+      --http httptools
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # PostgreSQL 数据库
+  postgres:
+    image: docker.m.daocloud.io/ankane/pgvector:v0.5.1
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=nexus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - nexus-network
+    restart: unless-stopped
+
+  # Redis 缓存
+  redis:
+    image: docker.m.daocloud.io/library/redis:7-alpine
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - nexus-network
+    restart: unless-stopped
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - VLLM_BASE_URL=http://vllm:8001
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/nexus
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - LOG_LEVEL=INFO
+      - HF_ENDPOINT=https://hf-mirror.com
+      - TRANSFORMERS_OFFLINE=0
+      - EMBEDDING_MODEL=BAAI/bge-large-zh-v1.5
+      - HF_HOME=/tmp/huggingface_cache
+      - SENTENCE_TRANSFORMERS_HOME=/tmp/huggingface_cache
+      - TRANSFORMERS_CACHE=/tmp/huggingface_cache
+    command: >
+      celery -A app.celery_app worker
+      --loglevel=info
+      --concurrency=1
+      -P solo
+      -Q pdf,embedding,default
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./app:/app/app:ro
+      - ./models:/models:ro
+      - nexus-uploads:/tmp/nexus-uploads
+      - huggingface_cache:/tmp/huggingface_cache
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping --destination celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Celery Beat
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/nexus
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - LOG_LEVEL=INFO
+    command: >
+      celery -A app.celery_app beat
+      --loglevel=info
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./app:/app/app:ro
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # vLLM 服务 (加载本地 Qwen-7B-AWQ 模型)
+  vllm:
+    image: vllm/vllm-openai:latest
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      --model /models/Qwen2-7B-Instruct-AWQ
+      --quantization awq
+      --dtype auto
+      --max-model-len 8192
+      --gpu-memory-utilization 0.85
+      --max-num-seqs 256
+      --enable-prefix-caching
+      --port 8001
+    volumes:
+      - ./models:/models:ro
+    ports:
+      - "8001:8001"
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  postgres_data:
+  redis_data:
+  nexus-uploads:
+  huggingface_cache:
+
+networks:
+  nexus-network:
+    driver: bridge

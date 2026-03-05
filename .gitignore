@@ -1,0 +1,135 @@
+# ============================================
+# Python 常规忽略项
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虚拟环境
+venv/
+ENV/
+env/
+.venv/
+
+# 测试与缓存
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.dmypy.json
+*.log
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ============================================
+# 敏感配置文件
+# ============================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# ============================================
+# 大模型文件（体积过大，不适合 Git）
+# ============================================
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+*.mlmodel
+
+# ============================================
+# 数据文件
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+data/
+uploads/
+nexus-uploads/
+postgres_data/
+redis_data/
+huggingface_cache/
+
+# ============================================
+# 面试/复盘/总结类文档（严格排除）
+# ============================================
+# 面试准备相关
+INTERVIEW_*.md
+*INTERVIEW*.md
+
+# 项目总结/复盘文档
+PROJECT_SUMMARY.md
+PROJECT_DOCUMENTATION.md
+RAG_REFACTOR_SUMMARY.md
+MIGRATION_SUMMARY.md
+START_MODE_COMPARE.md
+
+# 使用指南类（保留 README.md，排除其他）
+SESSION_CHAT_REACT_GUIDE.md
+STARTUP_GUIDE.md
+AUTODL_DEPLOY.md
+MODEL_SETUP.md
+RAG_TESTING_GUIDE.md
+how_to_start.md
+
+# PDF 文档
+*.pdf
+
+# ============================================
+# 临时/调试脚本（非核心代码）
+# ============================================
+quick_test.py
+*_test.sh
+test_*.sh
+check_*.sh
+debug*.sh
+fix_*.sh
+force_*.sh
+demo_*.sh
+*.sh.log
+
+# ============================================
+# Claude 相关
+# ============================================
+.claude/
+memory/
+
+# ============================================
+# 其他临时文件
+# ============================================
+1
+tunnel
+fix_missing_column.sql
