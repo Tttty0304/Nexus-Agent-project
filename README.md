@@ -35,12 +35,6 @@ open http://localhost:8080/static/index.html
 | **Knowledge 层** | pgvector, Celery, sentence-transformers | 文档处理与向量检索 |
 | **Action 层** | 自研 ReAct 引擎 | Agent 智能编排与工具调用 |
 
-## 📚 文档
-
-- [项目总结](PROJECT_SUMMARY.md) - 完整项目总结和修复说明
-- [RAG 测试指南](RAG_TESTING_GUIDE.md) - 详细的 RAG 功能测试文档
-- [详细技术文档](PROJECT_DOCUMENTATION.md) - 深度技术文档
-- [AutoDL 部署](AUTODL_DEPLOY.md) - GPU 云平台部署
 
 ## 🔧 环境准备
 
