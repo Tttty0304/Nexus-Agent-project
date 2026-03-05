@@ -181,20 +181,7 @@ docker-compose --profile monitoring up -d
 
 )
 
-## 📋 测试清单
 
-完成以下步骤验证系统功能：
-
-- [ ] 服务正常启动（`docker-compose up -d`）
-- [ ] 访问健康检查（`curl http://localhost:8080/health`）
-- [ ] 打开测试界面（`http://localhost:8080/static/index.html`）
-- [ ] 注册/登录用户
-- [ ] 上传测试 PDF 文档
-- [ ] 等待文档处理完成（状态变为 "已完成"）
-- [ ] 执行知识检索测试
-- [ ] 测试 RAG 增强聊天
-- [ ] 查看文档列表
-- [ ] 删除测试文档
 
 ## 🎯 快速测试
 
